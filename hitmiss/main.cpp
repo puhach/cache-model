@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 #include <cmath>
 
 /*
@@ -14,6 +15,7 @@ class PIPT
 {
 public:
 	
+	// TODO: consider making it constexpr
 	explicit PIPT(unsigned long lineSize, unsigned long numSets, unsigned long associativity)
 		: lineSize(lineSize > 0 ? lineSize : throw std::invalid_argument("The line size must be positive."))
 		, numSets(numSets > 0 ? numSets: throw std::invalid_argument("The number of sets must be positive."))
@@ -27,6 +29,18 @@ public:
 	PIPT(const PIPT& other) = default;
 
 	PIPT(PIPT&& other) = default;
+
+	// TODO: define the copy/move assignment operators
+
+	unsigned long getLineSize() const { return this->lineSize; }
+
+	unsigned long getNumSets() const { return this->numSets; }
+
+	unsigned long getAssociativity() const { return this->associativity; }
+
+	unsigned char getIndexLength() const { return this->indexBits; }
+
+	unsigned char getOffsetLength() const { return this->offsetBits; }
 
 private:
 	unsigned long lineSize;
@@ -63,20 +77,23 @@ private:
 };
 */
 
+
 template <class CacheReplacementPolicy>
 class CPUCache<PIPT, CacheReplacementPolicy>
 {
 public:
 	template <class PIPTParams, class CacheReplacementParams>
-	CPUCache(PIPTParams&& accessParams, CacheReplacementParams&& replacementParams = CacheReplacementParams())
+	CPUCache(PIPTParams&& accessParams, CacheReplacementParams&& replacementParams)
 		: pipt(std::forward<PIPTParams>(accessParams))
 		, replacer(std::forward<CacheReplacementPolicy>(replacementParams))
+		, sets(pipt.getNumSets(), pipt.getAssociativity())
 	{
 	}
 
 private:
 	PIPT pipt;
 	CacheReplacementPolicy replacer;
+	std::vector<CacheSet> sets;
 };
 
 class LRU
