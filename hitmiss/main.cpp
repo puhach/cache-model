@@ -78,6 +78,19 @@ private:
 */
 
 
+class CacheSet
+{
+public:
+	CacheSet(unsigned long associativity)
+		: lines(associativity)
+	{
+
+	}
+
+private:
+	std::vector<CacheLine> lines;
+};
+
 template <class CacheReplacementPolicy>
 class CPUCache<PIPT, CacheReplacementPolicy>
 {
