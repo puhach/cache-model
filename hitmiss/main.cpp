@@ -87,7 +87,7 @@ public:
 	CacheLine(const CacheAccessParams& accessParams, const CacheReplacementPolicy& replacementPolicy)
 		: accessParams(accessParams)
 		, replacementPolicy(replacementPolicy)
-		, b(1 + 1 + accessParams.getTagLength() + accessParams.getReplacementBitLength(), false)
+		, b(1 + 1 + accessParams.getTagLength() + replacementPolicy.getReplacementBitLength(accessParams), false)
 	{
 
 	}
@@ -119,6 +119,8 @@ public:
 		return tag;
 	}
 
+	// TODO: add a move version
+
 	void setTag(const BitArray& tag)
 	{
 		if (tag.getLength() != this->accessParams.getTagLength())
@@ -128,10 +130,28 @@ public:
 	}
 
 
+	BitArray getReplacementBits() const
+	{
+		BitArray replacementBits(this->replacementPolicy.getReplacementBitLength(this->accessParams));
+		auto from = this->b.begin() + tagOffset + this->accessParams.getTagLength();
+		std::copy(from, from+this->accessParams.getReplacementBits(), replacementBits.begin());
+		return replacementBits;
+	}
+
+	// TODO: add a move version
+
+	void setReplacementBits(const BitArray& replacementBits)
+	{
+		if (replacementBits.size() != this->replacementPolicy.getReplacementBitLength(this->accessParams))
+			return std::runtime_error("Attempting to set the replacement bits of invalid length.");
+
+		std::copy(replacementBits.begin(), replacementBits.end(), this->b.begin()+tagOffset+this->accessParams.getTagLength());
+		return replacementBits;
+	}
 
 private:
 
-	static constexpr int tagOffset = 1 + 1;
+	static constexpr BitArray::index_type tagOffset = 1 + 1;
 
 	/*bool valid;
 	bool dirty;
