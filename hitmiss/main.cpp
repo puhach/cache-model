@@ -92,9 +92,27 @@ public:
 
 	}
 
+	BitArray getTag() const
+	{
+		BitArray tag(this->accessParams.getTagLength());
+		std::copy(this->b.begin()+tagOffset, this->b.begin()+tagOffset+this->accessParams.getTagLength(), tag.begin());
+		return tag;
+	}
+
+	void setTag(const BitArray& tag)
+	{
+		if (tag.getLength() != this->accessParams.getTagLength())
+			throw std::runtime_error("Invalid tag length: " + tag.toString());
+
+		std::copy(tag.begin(), tag.end(), this->b.begin() + tagOffset);
+	}
+
 
 
 private:
+
+	static constexpr int tagOffset = 1 + 1;
+
 	/*bool valid;
 	bool dirty;
 	unsigned long long tag;
