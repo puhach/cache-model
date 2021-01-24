@@ -53,30 +53,18 @@ private:
 template <class CacheAccessing, class CacheReplacementPolicy>
 class CPUCache;
 
+
 /*
-template <class CacheReplacementPolicy>
-class CPUCache<CacheAccessing::PIPT, CacheReplacementPolicy>
+class CacheLine
 {
 public:
-	//CPUCache(unsigned char addressLen, unsigned char indexBits, unsigned char offsetBits, unsigned char associativity);
-
-	//CPUCache(unsigned long long cacheSize, unsigned long numSets, unsigned long associativity);
-
-	template <typename CacheReplacementParams>
-	CPUCache(unsigned long lineSize, unsigned long numSets, unsigned long associativity,
-		const CacheReplacementPolicy::Params& replacementParams = CacheReplacementPolicy::Params())
-		: associativity(associativity > 0 ? associativity : throw std::invalid_argument("The number of cache lines per set must be positive."))
-		, indexBits(numSets > 0 ? static_cast<unsigned long>(std::ceil(std::log2(numSets))) : throw std::invalid_argument("The number of sets must be positive."))
-		, offsetBits(lineSize > 0 ? static_cast<unsigned long>(std::ceil(std::log2(lineSize))) : throw std::invalid_argument("The line size must be positive."))
-	{
-
-	}
+	CacheLine() {}
 
 private:
-	CacheReplacementPolicy replacer;
+	bool valid = false;
+	bool dirty = false;
+	unsigned long long tag = 0;
 };
-*/
-
 
 class CacheSet
 {
@@ -90,10 +78,89 @@ public:
 private:
 	std::vector<CacheLine> lines;
 };
+*/
+
+
+
+template <class CacheAccessParams, class CacheReplacementPolicy>
+class CacheSet
+{
+	using CacheLineT = CacheLine<CacheAccessParams, CacheReplacementPolicy>;
+
+public:
+	CacheSet(const CacheAccessParams &accessParams, const CacheReplacementPolicy &replacementPolicy)
+		: lines(accessParams, replacementPolicy)
+	{}
+
+	bool read(const Address& tag, bool &hit, bool &writeBack)
+	{
+		//CacheLineT::IndexType invalidIdx = -1;
+		//for (CacheLineT::Index)
+
+		hit = false;
+		writeBack = false;
+
+		auto lineIt = lines.end();
+		for (auto it = lines.begin(); it != lines.end(); ++it)
+		{
+			if (it->isValid())
+			{
+				if (it->getTag() == tag)
+				{
+					//replacementPolicy.updateEntries(it, lines.begin(), lines.end());
+					//it->read(tag);
+					//return true;
+					hit = true;
+					writeBack = false;
+					lineIt = it;
+					break;
+				}	// tags match
+			}	// valid
+			else lineIt = it;
+		}
+
+		if (lineIt == lines.end)		// no free line
+		{
+			lineIt = replacementPolicy.evict(lines.begin(), lines.end());
+			//lineIt->read(tag, hit, writeBack);
+			writeBack = lineIt->isDirty();
+			lineIt->setTag(tag);
+		}
+		else	// free line
+		{
+			//invalidIt->read(tag);
+			replacementPolicy.updateEntries(lineIt, lines.begin(), lines.end());
+			lineIt->setValid(true);
+			lineIt->setDirty(false);
+			lineIt->setTag(tag);
+		}	// free line
+
+		return hit;
+	}
+
+private:
+	std::vector<CacheLineT> lines;
+};
+
+//template <class CacheReplacementPolicy>
+//class CacheSet<PIPT, CacheReplacementPolicy>
+//{
+//public:
+//	CacheSet(const PIPT& accessParams, const CacheReplacementPolicy& replacementParams)
+//		: lines(accessParams.getAssociativity(), CacheLine(accessParams, replacementParams))
+//	{
+//
+//	}
+//
+//private:
+//	std::vector<CacheLine<PIPT, CacheReplacementPolicy>> lines;
+//};
 
 template <class CacheReplacementPolicy>
 class CPUCache<PIPT, CacheReplacementPolicy>
 {
+	using CacheSetT = CacheSet<PIPT, CacheReplacementPolicy>;
+
 public:
 	template <class PIPTParams, class CacheReplacementParams>
 	CPUCache(PIPTParams&& accessParams, CacheReplacementParams&& replacementParams)
@@ -103,11 +170,28 @@ public:
 	{
 	}
 
+	bool read(const Address& address)
+	{
+		auto indexPart = address.extract(this->pipt.getOffsetLength(), this->pipt.getIndexLength());
+		auto tagPart = address.extract(this->pipt.getOffsetLength() + this->pipt.getIndexLength(), -1);
+		
+		auto index = indexPart.toNumber();	// TODO: check warnings on x86 and x64
+		if (index >= sets.size())	// beware type truncation
+			throw std::runtime_error("The indexed entry exceeds the number of sets.");
+
+		auto& cacheSet = sets[static_cast<CacheSetT::IndexType>(index)];
+		
+		return cacheSet.read(tagPart);
+	}
+
+	
 private:
 	PIPT pipt;
 	CacheReplacementPolicy replacer;
-	std::vector<CacheSet> sets;
+	std::vector<CacheSetT> sets;
 };
+
+
 
 class LRU
 {
