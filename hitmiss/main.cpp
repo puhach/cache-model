@@ -87,7 +87,7 @@ public:
 	CacheLine(const CacheAccessParams& accessParams, const CacheReplacementPolicy& replacementPolicy)
 		: accessParams(accessParams)
 		, replacementPolicy(replacementPolicy)
-		, b(1 + 1 + accessParams.getTagLength() + accessParams.getIndexLength() + accessParams.getOffsetLength() + accessParams.getReplacementBitLength(), false)
+		, b(1 + 1 + accessParams.getTagLength() + accessParams.getReplacementBitLength(), false)
 	{
 
 	}
@@ -102,7 +102,15 @@ public:
 		this->b[0] = valid;
 	}
 
-	
+	bool isDirty() const
+	{
+		return this->b[1];
+	}
+
+	void setDirty(bool dirty)
+	{
+		this->b[1] = dirty;
+	}
 
 	BitArray getTag() const
 	{
