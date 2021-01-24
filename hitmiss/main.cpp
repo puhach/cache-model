@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <algorithm>
 #include <cmath>
 
 /*
@@ -16,12 +17,14 @@ class PIPT
 public:
 	
 	// TODO: consider making it constexpr
-	explicit PIPT(unsigned long lineSize, unsigned long numSets, unsigned long associativity)
+	//explicit PIPT(unsigned long lineSize, unsigned long numSets, unsigned long associativity)
+	explicit PIPT(std::size_t addressLength, std::size_t lineSize, std::size_t numSets, std::size_t associativity)
 		: lineSize(lineSize > 0 ? lineSize : throw std::invalid_argument("The line size must be positive."))
 		, numSets(numSets > 0 ? numSets: throw std::invalid_argument("The number of sets must be positive."))
 		, associativity(associativity > 0 ? associativity : throw std::invalid_argument("The number of cache lines per set must be positive."))
-		, indexBits(static_cast<unsigned char>(std::ceil(std::log2(numSets))))
-		, offsetBits(static_cast<unsigned char>(std::ceil(std::log2(lineSize))))
+		, indexLength(static_cast<unsigned char>(std::ceil(std::log2(numSets))))
+		, offsetLength(static_cast<unsigned char>(std::ceil(std::log2(lineSize))))
+		, tagLength(indexLength+offsetLength <= addressLength ? addressLength-indexLength-offsetLength : 0)
 	{
 
 	}
@@ -32,21 +35,28 @@ public:
 
 	// TODO: define the copy/move assignment operators
 
-	unsigned long getLineSize() const { return this->lineSize; }
+	//unsigned long getLineSize() const { return this->lineSize; }
+	std::size_t getLineSize() const { return this->lineSize; }
 
-	unsigned long getNumSets() const { return this->numSets; }
+	//unsigned long getNumSets() const { return this->numSets; }
+	std::size_t getNumSets() const { return this->numSets; }
 
-	unsigned long getAssociativity() const { return this->associativity; }
+	//unsigned long getAssociativity() const { return this->associativity; }
+	std::size_t getAssociativity() const { return this->associativity; }
 
-	unsigned char getIndexLength() const { return this->indexBits; }
+	std::size_t getTagLength() const { return this->tagLength; }
 
-	unsigned char getOffsetLength() const { return this->offsetBits; }
+	//unsigned char getIndexLength() const { return this->indexBits; }
+	std::size_t getIndexLength() const { return this->indexLength; }
+
+	//unsigned char getOffsetLength() const { return this->offsetBits; }
+	std::size_t getOffsetLength() const { return this->offsetLength; }
 
 private:
-	unsigned long lineSize;
-	unsigned long numSets;
-	unsigned long associativity;
-	unsigned char indexBits, offsetBits;
+	std::size_t lineSize; //unsigned long lineSize;
+	std::size_t numSets;//unsigned long numSets;
+	std::size_t associativity;//unsigned long associativity;
+	std::size_t indexLength, offsetLength, tagLength;//unsigned char indexBits, offsetBits;
 };
 
 
@@ -79,6 +89,10 @@ private:
 	std::vector<CacheLine> lines;
 };
 */
+
+using BitArray = std::vector<bool>;
+
+
 
 template <class CacheAccessParams, class CacheReplacementPolicy>
 class CacheLine
@@ -119,7 +133,6 @@ public:
 		return tag;
 	}
 
-	// TODO: add a move version
 
 	void setTag(const BitArray& tag)
 	{
@@ -138,8 +151,6 @@ public:
 		return replacementBits;
 	}
 
-	// TODO: add a move version
-
 	void setReplacementBits(const BitArray& replacementBits)
 	{
 		if (replacementBits.size() != this->replacementPolicy.getReplacementBitLength(this->accessParams))
@@ -149,9 +160,18 @@ public:
 		return replacementBits;
 	}
 
+	bool compareTag(const BitArray& tag) const
+	{
+		if (tag.getLength() != this->accessParams.getTagLength())
+			throw std::runtime_error("Invalid tag length: " + tag.toString());
+			//throw std::runtime_error("Invalid tag length: " + std::to_string(tag.getLength()));
+
+		return std::equal(tag.begin(), tag.end(), this->b.begin()+tagOffset);
+	}
+
 private:
 
-	static constexpr BitArray::index_type tagOffset = 1 + 1;
+	static constexpr BitArray::size_type tagOffset = 1 + 1;
 
 	/*bool valid;
 	bool dirty;
@@ -171,10 +191,10 @@ class CacheSet
 
 public:
 	CacheSet(const CacheAccessParams &accessParams, const CacheReplacementPolicy &replacementPolicy)
-		: lines(accessParams, replacementPolicy)
+		: lines(accessParams.getAssociativity(), CacheLine(accessParams, replacementPolicy))
 	{}
 
-	bool read(const Address& tag, bool &hit, bool &writeBack)
+	bool read(const BitArray& tag, bool &hit, bool &writeBack)
 	{
 		//CacheLineT::IndexType invalidIdx = -1;
 		//for (CacheLineT::Index)
@@ -187,7 +207,8 @@ public:
 		{
 			if (it->isValid())
 			{
-				if (it->getTag() == tag)
+				//if (it->getTag() == tag)
+				if (it->compareTag(tag))
 				{
 					//replacementPolicy.updateEntries(it, lines.begin(), lines.end());
 					//it->read(tag);
@@ -248,11 +269,11 @@ public:
 	CPUCache(PIPTParams&& accessParams, CacheReplacementParams&& replacementParams)
 		: pipt(std::forward<PIPTParams>(accessParams))
 		, replacer(std::forward<CacheReplacementPolicy>(replacementParams))
-		, sets(pipt.getNumSets(), pipt.getAssociativity())
+		, sets(pipt.getNumSets(), CacheSet(pipt, replacer))
 	{
 	}
 
-	bool read(const Address& address)
+	bool read(const BitArray& address)
 	{
 		auto indexPart = address.extract(this->pipt.getOffsetLength(), this->pipt.getIndexLength());
 		auto tagPart = address.extract(this->pipt.getOffsetLength() + this->pipt.getIndexLength(), -1);
@@ -261,7 +282,7 @@ public:
 		if (index >= sets.size())	// beware type truncation
 			throw std::runtime_error("The indexed entry exceeds the number of sets.");
 
-		auto& cacheSet = sets[static_cast<CacheSetT::IndexType>(index)];
+		auto& cacheSet = sets[static_cast<decltype(this->lines)::index_type>(index)];
 		
 		return cacheSet.read(tagPart);
 	}
@@ -282,7 +303,7 @@ class LRU
 
 int main(int argc, char* argv[])
 {	
-	CPUCache<PIPT, LRU> cpuCache(PIPT(8 /*line size (bytes)*/, 2 /*how many sets*/, 2 /*lines per set (associativity)*/), LRU());
+	CPUCache<PIPT, LRU> cpuCache(PIPT(12 /*address length (bits)*/, 8 /*line size (bytes)*/, 2 /*how many sets*/, 2 /*lines per set (associativity)*/), LRU());
 	//CPUCache<PIPT, LRU> cpuCache(8 /*line size (bytes)*/, 2 /*how many sets*/, 2 /* how many lines per set (associativity) */);
 	//CPUCache<PIPT, LRU> cpuCache(12 /*address length*/, 1 /*index bits*/, 4 /* offset bits */, 2 /*associativity*/);
 
