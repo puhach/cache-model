@@ -92,6 +92,18 @@ public:
 
 	}
 
+	bool isValid() const
+	{
+		return this->b[0];
+	}
+
+	void setValid(bool valid)
+	{
+		this->b[0] = valid;
+	}
+
+	
+
 	BitArray getTag() const
 	{
 		BitArray tag(this->accessParams.getTagLength());
