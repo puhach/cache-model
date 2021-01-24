@@ -80,6 +80,30 @@ private:
 };
 */
 
+template <class CacheAccessParams, class CacheReplacementPolicy>
+class CacheLine
+{
+public:
+	CacheLine(const CacheAccessParams& accessParams, const CacheReplacementPolicy& replacementPolicy)
+		: accessParams(accessParams)
+		, replacementPolicy(replacementPolicy)
+		, b(1 + 1 + accessParams.getTagLength() + accessParams.getIndexLength() + accessParams.getOffsetLength() + accessParams.getReplacementBitLength(), false)
+	{
+
+	}
+
+
+
+private:
+	/*bool valid;
+	bool dirty;
+	unsigned long long tag;
+	unsigned long lruCounter;*/
+	const CacheAccessParams& accessParams;
+	const CacheReplacementPolicy& replacementPolicy;
+	//std::vector<bool> b;
+	BitArray b;
+};
 
 
 template <class CacheAccessParams, class CacheReplacementPolicy>
