@@ -3,7 +3,9 @@
 
 #include "cacheset.h"
 #include "pipt.h"
+#include "lru.h"
 
+#include <iostream>
 #include <vector>
 #include <stdexcept>
 
@@ -29,7 +31,10 @@ public:
 
 	bool read(const BitArray& address);
 	
+	// TODO: implement a write
 	
+	void printStatus();
+
 private:
 	PIPT pipt;
 	CacheReplacementPolicy replacer;
@@ -56,6 +61,35 @@ bool CPUCache<PIPT, ReplacementPolicy>::read(const BitArray& address)
 	return cacheSet.read(tag, hit, writeBack);
 }
 
+
+template <class ReplacementPolicy>
+void CPUCache<PIPT, ReplacementPolicy>::printStatus()
+{
+	// In case of any issues check this:
+	// https://stackoverflow.com/questions/14637356/static-assert-fails-compilation-even-though-template-function-is-called-nowhere
+	static_assert(false, "Printing status is not implemented for this type of cache.");
+}
+
+template <>
+inline void CPUCache<PIPT, LRU>::printStatus()
+{
+	for (std::size_t i = 0; i < this->sets.size(); ++i)
+	{
+		std::cout << "Set " << i << std::endl << std::endl;
+
+		for (std::size_t j = 0; j < this->pipt.getAssociativity(); ++j)
+		{
+			std::cout << "Line " << j << std::endl;
+			std::cout << "Valid: " << this->sets[i][j].isValid()
+				<< "\tDirty: " << this->sets[i][j].isDirty()
+				<< "\tTag: " << (std::string)this->sets[i][j].getTag()  
+				<< "\tLRU: " << (std::string)this->sets[i][j].getReplacementBits() 
+				<< std::endl << std::endl;
+		}	// j
+
+		std::cout << std::endl;
+	}	// for i
+}
 
 /*
 template <class CacheAccess, class CacheReplacementPolicy>
