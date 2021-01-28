@@ -15,6 +15,16 @@ public:
 		, lines(accessParams.getAssociativity(), CacheLine(accessParams, replacementPolicy))		
 	{}
 
+	std::size_t getSize() const { return this->lines.size(); }
+
+	const CacheLine<CacheAccessParams, CacheReplacementPolicy>& getCacheLine(std::size_t index) const { return this->lines.at(index); }
+
+	CacheLine<CacheAccessParams, CacheReplacementPolicy>& getCacheLine(std::size_t index) { return this->lines.at(index); }
+
+	const CacheLine<CacheAccessParams, CacheReplacementPolicy>& operator [] (std::size_t index) const { return this->lines[index]; }
+
+	CacheLine<CacheAccessParams, CacheReplacementPolicy>& operator [] (std::size_t index) { return this->lines[index]; }
+
 	// TODO: perhaps, pass hit and writeBack by pointers and make them optional
 	bool read(const BitArray& tag, bool &hit, bool &writeBack)
 	{
