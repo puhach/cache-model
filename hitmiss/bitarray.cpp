@@ -1,5 +1,8 @@
 #include "bitarray.h"
 
+#include <cctype>
+#include <algorithm>
+
 
 BitArray::BitArray(std::size_t length, bool value)
 	: b(length, value)
@@ -102,3 +105,54 @@ int BitArray::compare(std::size_t pos, std::size_t count, const BitArray& other)
 	return 0;
 }
 
+
+std::string BitArray::toString(Notation notation, std::size_t pos, std::size_t count) const
+{
+	if (pos + count > this->b.size())
+		throw std::range_error("Attempting to access bits outside the array.");
+
+	std::string s;
+
+	switch (notation)
+	{
+	case Notation::Binary:
+		s.resize(count);
+		for (std::ptrdiff_t i = count - 1; i >= 0; --i)
+			s[i] = this->b[pos + i] ? '1' : '0';
+		break;
+
+	case Notation::Hexadecimal:
+	{
+		s.reserve(count / 4 + 1);
+
+		unsigned char hexd = 0;
+		for (std::ptrdiff_t i = count - 1; i >= 0; --i)
+			//for (std::size_t i = 0; i < count; ++i)
+		{
+			hexd <<= 1;
+			if (this->b[pos + i])
+				hexd |= 1;
+
+			//if (i % 4 == 3 || i == count-1)
+			if (i == count - count % 4 || i % 4 == 0)
+			{
+				assert(hexd <= 0xF);
+
+				if (hexd >= 0xA)
+					s.push_back('A' + hexd - 0xA);
+				else
+					s.push_back('0' + hexd);
+
+				hexd = 0;
+			}
+		}	// i
+
+		break;
+	}
+
+	default:
+		throw std::runtime_error("Unsupported notation.");
+	}	// notation
+
+	return s;
+}	// toString

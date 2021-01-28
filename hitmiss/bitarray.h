@@ -4,7 +4,6 @@
 #include <vector>
 #include <limits>
 #include <string>
-#include <algorithm>
 #include <cassert>
 #include <stdexcept>
 
@@ -51,11 +50,12 @@ public:
 
 	void setBits(std::size_t pos, const BitArray& other);
 
+
+	// out-of-line and in-class definitions
+	// https://stackoverflow.com/questions/40381680/out-of-line-definition-of-template-function-vs-in-class
+
 	template <typename Integer, std::enable_if_t<std::is_integral_v<Integer>, bool> = true>
-	void setNumber(Integer number)
-	{
-		setNumber(0, this->b.size(), number);
-	}
+	void setNumber(Integer number)	{	setNumber(0, this->b.size(), number);	}
 
 	template <typename Integer, std::enable_if_t<std::is_integral_v<Integer>, bool> = true>
 	void setNumber(std::size_t pos, std::size_t count, Integer number)
@@ -70,7 +70,6 @@ public:
 		}
 	}
 
-	//unsigned long long extractNumber(std::size_t pos, std::size_t count) const;
 
 	// TODO: define the type cast operator
 	template <typename Integer, std::enable_if_t<std::is_integral_v<Integer>, bool> = true>
@@ -83,7 +82,7 @@ public:
 	Integer toNumber(std::size_t pos, std::size_t count) const
 	{
 		if (pos + count > this->b.size())
-			throw std::range_error("Attempting to access bits outside the address.");
+			throw std::range_error("Attempting to access bits outside the array.");
 
 		if (std::numeric_limits<Integer>::digits < count)
 			throw std::overflow_error("The specified address part can't fit the destination numeric type.");
@@ -122,24 +121,19 @@ public:
 		return num;
 	}*/
 
-	std::string toString() const
-	{
-		// TODO: not implemented
-		return std::string();
-	}
+	std::string toString(Notation notation) const	{ return toString(notation, 0, b.size());	}
 
-	std::string toString(std::size_t pos, std::size_t count) const
-	{
-		// TODO: not implemented
-	}
-
+	std::string toString(Notation notation, std::size_t pos, std::size_t count) const;
+	
 	// TODO: define comparison operators
 	int compare(std::size_t pos, std::size_t count, const BitArray& other) const;
+
+	/*explicit*/ operator std::string() const { return toString(Notation::Hexadecimal); }
 
 private:
 	//BitArray_ b;
 	std::vector<bool> b;
-};
+};	// BitArray
 
 
 #endif	// BITARRAY_H
