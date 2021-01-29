@@ -90,8 +90,8 @@ public:
 		Integer num = 0;
 		for (std::size_t i = pos; i < pos + count; ++i)
 		{
-			num |= static_cast<Integer>(this->b[i]);
 			num <<= 1;
+			num |= static_cast<Integer>(this->b[i]);
 		}
 
 		return num;
