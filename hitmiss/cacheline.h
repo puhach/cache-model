@@ -48,14 +48,16 @@ public:
 		//BitArray tag(this->accessParams.getTagLength());
 		//std::copy(this->b.begin()+tagOffset, this->b.begin()+tagOffset+this->accessParams.getTagLength(), tag.begin());
 		//return tag;
-		return BitArray(this->b.begin() + tagOffset, this->b.begin() + tagOffset + this->accessParams.getTagLength());
+		//return BitArray(this->b.begin() + tagOffset, this->b.begin() + tagOffset + this->accessParams.getTagLength());
+		return this->b.getBits(tagOffset, this->accessParams.getTagLength());
 	}
 
 
 	void setTag(const BitArray& tag)
 	{
 		if (tag.getLength() != this->accessParams.getTagLength())
-			throw std::runtime_error("Invalid tag length: " + tag.toString());
+			//throw std::runtime_error("Invalid tag length: " + tag.toString());
+			throw std::runtime_error("Invalid tag length: " + std::to_string(tag.getLength()));
 
 		//std::copy(tag.begin(), tag.end(), this->b.begin() + tagOffset);
 		this->b.setBits(tagOffset, tag);
@@ -85,8 +87,8 @@ public:
 	bool compareTag(const BitArray& tag) const
 	{
 		if (tag.getLength() != this->accessParams.getTagLength())
-			throw std::runtime_error("Invalid tag length: " + tag.toString());
-			//throw std::runtime_error("Invalid tag length: " + std::to_string(tag.getLength()));
+			//throw std::runtime_error("Invalid tag length: " + tag.toString());
+			throw std::runtime_error("Invalid tag length: " + std::to_string(tag.getLength()));
 
 		//return std::equal(tag.begin(), tag.end(), this->b.begin()+tagOffset);
 		//return this->b.equals(tagOffset, tag.getLength(), tag);
