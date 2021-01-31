@@ -20,7 +20,8 @@ public:
 	// TODO: consider making it constexpr
 	//explicit PIPT(unsigned long lineSize, unsigned long numSets, unsigned long associativity)
 	explicit PIPT(std::size_t addressLength, std::size_t lineSize, std::size_t numSets, std::size_t associativity)
-		: lineSize(lineSize > 0 ? lineSize : throw std::invalid_argument("The line size must be positive."))
+		: addressLength(addressLength > 0 ? addressLength : throw std::invalid_argument("Address length must be positive."))
+		, lineSize(lineSize > 0 ? lineSize : throw std::invalid_argument("The line size must be positive."))
 		, numSets(numSets > 0 ? numSets: throw std::invalid_argument("The number of sets must be positive."))
 		, associativity(associativity > 0 ? associativity : throw std::invalid_argument("The number of cache lines per set must be positive."))
 		, indexLength(static_cast<unsigned char>(std::ceil(std::log2(numSets))))
@@ -35,6 +36,8 @@ public:
 	PIPT(PIPT&& other) = default;
 
 	// TODO: define the copy/move assignment operators
+
+	std::size_t getAddressLength() const { return this->addressLength; }
 
 	//unsigned long getLineSize() const { return this->lineSize; }
 	std::size_t getLineSize() const { return this->lineSize; }
@@ -54,6 +57,7 @@ public:
 	std::size_t getOffsetLength() const { return this->offsetLength; }
 
 private:
+	std::size_t addressLength;
 	std::size_t lineSize; //unsigned long lineSize;
 	std::size_t numSets;//unsigned long numSets;
 	std::size_t associativity;//unsigned long associativity;
