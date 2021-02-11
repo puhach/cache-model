@@ -7,8 +7,6 @@
 template <class CacheAccessParams, class CacheReplacementPolicy>
 class CacheSet
 {
-	//using CacheLineT = ;
-
 public:
 	CacheSet(const CacheAccessParams &accessParams, const CacheReplacementPolicy &replacementPolicy)
 		: replacementPolicy(replacementPolicy)
@@ -26,13 +24,20 @@ public:
 	CacheLine<CacheAccessParams, CacheReplacementPolicy>& operator [] (std::size_t index) { return this->lines[index]; }
 
 	// TODO: perhaps, pass hit and writeBack by pointers and make them optional
-	bool read(const BitArray& tag, bool &hit, bool &writeBack)
-	{
-		//CacheLineT::IndexType invalidIdx = -1;
-		//for (CacheLineT::Index)
+	std::pair<bool, bool> read(const BitArray& tag)	{	return update<false>(tag);	}	
 
-		hit = false;
-		writeBack = false;
+	std::pair<bool, bool> write(const BitArray& tag) {	return update<true>(tag);	}	
+
+private:
+
+	template <bool isWrite>
+	//bool update(const BitArray& tag, bool* hit, bool* writeBack)
+	std::pair<bool, bool> update(const BitArray& tag)
+	{
+		//*hit = false;
+		//*writeBack = false;
+		bool hit = false;
+		bool writeBack = false;
 
 		auto lineIt = lines.end();
 		for (auto it = lines.begin(); it != lines.end(); ++it)
@@ -42,9 +47,6 @@ public:
 				//if (it->getTag() == tag)
 				if (it->compareTag(tag))
 				{
-					//replacementPolicy.updateEntries(it, lines.begin(), lines.end());
-					//it->read(tag);
-					//return true;
 					hit = true;
 					writeBack = false;
 					lineIt = it;
@@ -57,40 +59,26 @@ public:
 		if (lineIt == lines.end())		// no free line
 		{
 			lineIt = this->replacementPolicy.evict(lines.begin(), lines.end());
-			//lineIt->read(tag, hit, writeBack);
 			writeBack = lineIt->isDirty();
+			lineIt->setDirty(isWrite);
 			lineIt->setTag(tag);
 		}
 		else	// free line
 		{
-			//invalidIt->read(tag);
 			this->replacementPolicy.update(lineIt, lines.begin(), lines.end());
 			lineIt->setValid(true);
-			lineIt->setDirty(false);
+			lineIt->setDirty(isWrite || hit && lineIt->isDirty());		// in case of a hit we have to check whether it was dirty
 			lineIt->setTag(tag);
 		}	// free line
 
-		return hit;
-	}
+		//return hit;
+		return std::make_pair(hit, writeBack);
+	}	// update
 
-private:
 	const CacheReplacementPolicy& replacementPolicy;
 	std::vector<CacheLine<CacheAccessParams, CacheReplacementPolicy>> lines;
-};
+};	// CacheSet
 
-//template <class CacheReplacementPolicy>
-//class CacheSet<PIPT, CacheReplacementPolicy>
-//{
-//public:
-//	CacheSet(const PIPT& accessParams, const CacheReplacementPolicy& replacementParams)
-//		: lines(accessParams.getAssociativity(), CacheLine(accessParams, replacementParams))
-//	{
-//
-//	}
-//
-//private:
-//	std::vector<CacheLine<PIPT, CacheReplacementPolicy>> lines;
-//};
 
 
 #endif	// CACHESET_H
