@@ -28,26 +28,48 @@ public:
 	{
 	}
 
+	// TODO: add a function to invalidate a cache line
 
-	bool read(const BitArray& address);
+	// TODO: we need both hit and writeBack
+	std::pair<bool, bool> read(const BitArray& address) { return update<false>(address); }
 	
-	// TODO: implement a write
+	std::pair<bool, bool> write(const BitArray& address) { return update<true>(address); }
 	
 	void printStatus();
 
 private:
+
+	template <bool isWrite>
+	std::pair<bool, bool> update(const BitArray& address);
+	//bool update(const BitArray& address);
+
 	PIPT pipt;
 	CacheReplacementPolicy replacer;
 	std::vector<CacheSet<PIPT, CacheReplacementPolicy>> sets;
 };	// CPUCache
 
-template <class ReplacementPolicy>
-bool CPUCache<PIPT, ReplacementPolicy>::read(const BitArray& address)
-{
-	//auto indexPart = address.extract(this->pipt.getOffsetLength(), this->pipt.getIndexLength());
-	//auto tagPart = address.extract(this->pipt.getOffsetLength() + this->pipt.getIndexLength(), -1);
+//template <class ReplacementPolicy>
+//bool CPUCache<PIPT, ReplacementPolicy>::read(const BitArray& address)
+//{
+//	const auto& tag = address.getBits(this->pipt.getOffsetLength() + this->pipt.getIndexLength(), this->pipt.getTagLength());
+//	auto index = address.toNumber<std::size_t>(this->pipt.getOffsetLength(), this->pipt.getIndexLength());
+//
+//	if (index >= sets.size())
+//		throw std::runtime_error("The indexed entry exceeds the number of sets.");
+//
+//	auto& cacheSet = this->sets[static_cast<decltype(this->sets)::size_type>(index)];
+//
+//	bool hit, writeBack;
+//	return cacheSet.read(tag, hit, writeBack);
+//}
 
-	//auto index = indexPart.toNumber();	// TODO: check warnings on x86 and x64
+template <class ReplacementPolicy>
+template <bool isWrite>
+//bool CPUCache<PIPT, ReplacementPolicy>::update(const BitArray& address)
+std::pair<bool, bool> CPUCache<PIPT, ReplacementPolicy>::update(const BitArray& address)
+{
+	if (address.getLength() != this->pipt.getAddressLength())
+		throw std::invalid_argument("The specified address length does not match the system address length.");
 
 	const auto& tag = address.getBits(this->pipt.getOffsetLength() + this->pipt.getIndexLength(), this->pipt.getTagLength());
 	auto index = address.toNumber<std::size_t>(this->pipt.getOffsetLength(), this->pipt.getIndexLength());
@@ -57,9 +79,13 @@ bool CPUCache<PIPT, ReplacementPolicy>::read(const BitArray& address)
 
 	auto& cacheSet = this->sets[static_cast<decltype(this->sets)::size_type>(index)];
 
-	bool hit, writeBack;
-	return cacheSet.read(tag, hit, writeBack);
-}
+	//bool hit, writeBack;
+	if constexpr (isWrite)	// TODO: instead of if-checking, we can pass a pointer to CacheSet::read, CacheSet::write, or CacheSet::invalidate
+		return cacheSet.write(tag);
+	else
+		return cacheSet.read(tag);
+}	// update
+
 
 
 template <class ReplacementPolicy>
