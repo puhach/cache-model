@@ -1,7 +1,10 @@
 #ifndef LRU_H
 #define LRU_H
 
+#include "bitarray.h"
 
+#include <cassert>
+#include <cmath>
 
 class LRU
 {
