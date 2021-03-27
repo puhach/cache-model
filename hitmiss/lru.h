@@ -92,7 +92,10 @@ public:
 		//if (rank == n-1)
 		for (; first != last; ++first)
 		{
-			if (!first->isValid() || first == updatedIt)
+			// It looks like we have to update LRU counters even for invalid entries:
+			// https://classroom.udacity.com/courses/ud007/lessons/632538649/concepts/9391386340923
+			//if (!first->isValid() || first == updatedIt)
+			if (first == updatedIt)
 				continue;
 
 			auto bits = first->getReplacementBits();
