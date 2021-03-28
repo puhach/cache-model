@@ -45,8 +45,7 @@ public:
 			}
 			
 			first->setReplacementBits(bits);
-			++first;
-		}
+		}	// for
 
 		/*
 		Iterator evicted;
