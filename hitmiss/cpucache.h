@@ -29,8 +29,8 @@ public:
 	{
 	}
 
-	// TODO: add a function to invalidate a cache line
-	//bool invalidate(const BitArray& address) { return update(address, std::mem_fn(&CacheSet<PIPT, CacheReplacementPolicy>::invalidate)); }
+	/// TODO: add a function to invalidate a cache line
+	std::pair<bool, bool> invalidate(const BitArray& address) { return update(address, std::mem_fn(&CacheSet<PIPT, CacheReplacementPolicy>::invalidate)); }
 
 	/// TODO: we need both hit and writeBack
 	//std::pair<bool, bool> read(const BitArray& address) { return update<false>(address); }

@@ -23,10 +23,11 @@ public:
 
 	CacheLine<CacheAccessParams, CacheReplacementPolicy>& operator [] (std::size_t index) { return this->lines[index]; }
 
-	// TODO: perhaps, pass hit and writeBack by pointers and make them optional
 	std::pair<bool, bool> read(const BitArray& tag)	{	return update<false>(tag);	}	
 
 	std::pair<bool, bool> write(const BitArray& tag) {	return update<true>(tag);	}	
+
+	std::pair<bool, bool> invalidate(const BitArray& tag);
 
 private:
 
@@ -79,6 +80,28 @@ private:
 	std::vector<CacheLine<CacheAccessParams, CacheReplacementPolicy>> lines;
 };	// CacheSet
 
+template <class CacheAccessParams, class CacheReplacementPolicy>
+std::pair<bool, bool> CacheSet<CacheAccessParams, CacheReplacementPolicy>::invalidate(const BitArray& tag)
+{
+	for (auto it = lines.begin(); it != lines.end(); ++it)
+	{
+		if (it->isValid())
+		{
+			//if (it->getTag() == tag)
+			if (it->compareTag(tag))
+			{
+				//hit = true;
+				//writeBack = false;
+				//lineIt = it;
+				bool writeBack = it->isDirty();
+				it->setValid(false);
+				//it->setDirty();
+				return std::make_pair(true, writeBack);
+			}	// tags match
+		}	// valid
+	}	// for
 
+	return std::make_pair(false, false);
+}	// invalidate
 
 #endif	// CACHESET_H
