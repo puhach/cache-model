@@ -6,7 +6,7 @@
 #include <string>
 #include <cassert>
 #include <stdexcept>
-
+#include <cmath>
 
 class BitArray
 {
@@ -26,6 +26,16 @@ public:
 		Hexadecimal
 	};
 
+	template <typename Integer, std::enable_if_t<std::is_integral_v<Integer>, bool> = true>
+	explicit BitArray(Integer value) //: BitArray(static_cast<std::size_t>(value > 0 ? std::ceil(std::log2(value)) : 1), false)
+	{
+		//setNumber(value);
+		do
+		{
+			this->b.push_back(value & 1);
+		} while (value >>= 1);
+	}
+
 	explicit BitArray(std::size_t length, bool value);
 
 	explicit BitArray(const std::string& s, Notation notation);
@@ -39,8 +49,6 @@ public:
 	// TODO: add copy/move constructors and copy/move assignment operators
 
 	BitArray::IndexType getLength() const { return this->b.size(); }
-
-	// TODO: define the subscript operator
 
 	bool getBit(std::size_t pos) const { return this->b[pos]; }
 
