@@ -10,6 +10,7 @@ class CacheSet
 public:
 	CacheSet(const CacheAccessParams &accessParams, const CacheReplacementPolicy &replacementPolicy)
 		: replacementPolicy(replacementPolicy)
+		, replacementBits(replacementPolicy.getReplacementBitLengthPerSet(accessParams))
 		, lines(accessParams.getAssociativity(), CacheLine(accessParams, replacementPolicy))		
 	{}
 
@@ -22,6 +23,23 @@ public:
 	const CacheLine<CacheAccessParams, CacheReplacementPolicy>& operator [] (std::size_t index) const { return this->lines[index]; }
 
 	CacheLine<CacheAccessParams, CacheReplacementPolicy>& operator [] (std::size_t index) { return this->lines[index]; }
+
+
+	//const CacheReplacementPolicy& getReplacementPolicy() const { return this->replacementPolicy; }
+
+	BitArray getReplacementBits() const { return this->replacementBits; }
+
+	void setReplacementBits(const BitArray& replacementBits)
+	{
+		//if (replacementBits.getLength() != this->replacementPolicy.getReplacementBitLengthPerSet(this->accessParams))
+		if (replacementBits.getLength() != this->replacementBits.getLength())
+			throw std::runtime_error("Attempting to set the replacement bits of invalid length.");
+
+		this->replacementBits = replacementBits;
+	}
+
+	// TODO: consider adding an rvalue-reference overload
+
 
 	std::pair<bool, bool> read(const BitArray& tag)	{	return update<false>(tag);	}	
 
@@ -59,14 +77,18 @@ private:
 
 		if (lineIt == lines.end())		// no free line
 		{
-			lineIt = this->replacementPolicy.evict(lines.begin(), lines.end());
+			//lineIt = this->replacementPolicy.evict(lines.begin(), lines.end());
+			//lineIt = this->replacementPolicy.evict(*this);
+			std::size_t evictedIdx = this->replacementPolicy.evict(*this);
+			lineIt = lines.begin() + evictedIdx;
 			writeBack = lineIt->isDirty();
 			lineIt->setDirty(isWrite);
 			lineIt->setTag(tag);
 		}
 		else	// free line
 		{
-			this->replacementPolicy.update(lineIt, lines.begin(), lines.end());
+			//this->replacementPolicy.update(lineIt, lines.begin(), lines.end());
+			this->replacementPolicy.update(*this, lineIt - lines.begin());
 			lineIt->setValid(true);
 			lineIt->setDirty(isWrite || hit && lineIt->isDirty());		// in case of a hit we have to check whether it was dirty
 			lineIt->setTag(tag);
@@ -77,6 +99,7 @@ private:
 	}	// update
 
 	const CacheReplacementPolicy& replacementPolicy;
+	BitArray replacementBits;
 	std::vector<CacheLine<CacheAccessParams, CacheReplacementPolicy>> lines;
 };	// CacheSet
 
