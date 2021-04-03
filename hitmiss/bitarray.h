@@ -50,6 +50,13 @@ public:
 
 	BitArray::IndexType getLength() const { return this->b.size(); }
 
+	bool operator [](std::size_t pos) const { return getBit(pos); }
+
+	// std::vector<bool> is special, it does not return a reference but a proxy object
+	// https://stackoverflow.com/questions/63476664/what-does-the-error-return-cannot-convert-from-std-vb-referencestd-wrap
+	// https://en.cppreference.com/w/cpp/container/vector_bool
+	auto operator [](std::size_t pos) {	return this->b[pos]; }
+
 	bool getBit(std::size_t pos) const { return this->b[pos]; }
 
 	void setBit(std::size_t pos, bool value) { this->b[pos] = value; }
