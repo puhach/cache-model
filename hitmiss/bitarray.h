@@ -85,7 +85,6 @@ public:
 		}
 	}
 
-
 	// TODO: define the type cast operator
 	template <typename Integer, std::enable_if_t<std::is_integral_v<Integer>, bool> = true>
 	Integer toNumber() const
@@ -105,8 +104,9 @@ public:
 		Integer num = 0;
 		for (std::size_t i = pos; i < pos + count; ++i)
 		{
-			num <<= 1;
-			num |= static_cast<Integer>(this->b[i]);
+			//num <<= 1;
+			//num |= static_cast<Integer>(this->b[i]);
+			num |= static_cast<Integer>(this->b[i]) << i;
 		}
 
 		return num;
