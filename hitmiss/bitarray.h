@@ -46,7 +46,6 @@ public:
 
 	explicit BitArray(std::vector<bool>::const_iterator first, std::vector<bool>::const_iterator last);
 
-	// TODO: add copy/move constructors and copy/move assignment operators
 
 	BitArray::IndexType getLength() const { return this->b.size(); }
 
@@ -85,7 +84,6 @@ public:
 		}
 	}
 
-	// TODO: define the type cast operator
 	template <typename Integer, std::enable_if_t<std::is_integral_v<Integer>, bool> = true>
 	Integer toNumber() const
 	{
@@ -106,7 +104,7 @@ public:
 		{
 			//num <<= 1;
 			//num |= static_cast<Integer>(this->b[i]);
-			num |= static_cast<Integer>(this->b[i]) << i;
+			num |= static_cast<Integer>(this->b[i]) << (i-pos);
 		}
 
 		return num;
@@ -143,7 +141,10 @@ public:
 	// TODO: define comparison operators
 	int compare(std::size_t pos, std::size_t count, const BitArray& other) const;
 
-	/*explicit*/ operator std::string() const { return toString(Notation::Hexadecimal); }
+	explicit operator std::string() const { return toString(Notation::Hexadecimal); }
+
+	template <typename Integer, std::enable_if_t<std::is_integral_v<Integer>, bool> = true>
+	explicit operator Integer() const {	return toNumber<Integer>(); }
 
 private:
 	//BitArray_ b;
