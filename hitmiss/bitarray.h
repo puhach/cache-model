@@ -8,16 +8,15 @@
 #include <stdexcept>
 #include <cmath>
 
+/*
+* The class BitArray represents an arbitrary length sequence of bits. It provides access methods for manipulating individual bits
+* and can be converted to and from integers and strings (in a binary or hexadecimal notation).
+*/
+
 class BitArray
 {
-	//using BitArray_ = std::vector<bool>;
-
 public:
 	
-	//using Iterator = BitArray_::iterator;
-	//using ConstIterator = BitArray_::const_iterator;
-
-	//using IndexType = BitArray_::size_type;
 	using IndexType = std::vector<bool>::size_type;
 
 	enum class Notation
@@ -45,6 +44,14 @@ public:
 	explicit BitArray(std::vector<bool>&& v);
 
 	explicit BitArray(std::vector<bool>::const_iterator first, std::vector<bool>::const_iterator last);
+
+	BitArray(const BitArray& other) = default;
+	
+	BitArray(BitArray&& other) = default;
+
+	BitArray& operator = (const BitArray&) = default;
+
+	BitArray& operator = (BitArray&&) = default;
 
 
 	BitArray::IndexType getLength() const { return this->b.size(); }
@@ -102,37 +109,11 @@ public:
 		Integer num = 0;
 		for (std::size_t i = pos; i < pos + count; ++i)
 		{
-			//num <<= 1;
-			//num |= static_cast<Integer>(this->b[i]);
 			num |= static_cast<Integer>(this->b[i]) << (i-pos);
 		}
 
 		return num;
-
-		//return BitArray::getNumber<Integer>(this->b.begin()+pos, this->b.begin()+pos+count);
 	}
-
-	/*
-	template <typename Integer, std::enable_if_t<std::is_integral_v<Integer>, bool> = true>
-	static Integer getNumber(BitArray::ConstIterator first, BitArray::ConstIterator last)
-	//static Integer getNumber(std::vector<bool>::const_iterator first, std::vector<bool>::const_iterator last)
-	{
-		if (first >= last)
-			throw std::range_error("Invalid range for conversion.");
-
-		if (std::numeric_limits<Integer>::digits() < last-first)
-			throw std::overflow_error("The specified address part can't fit the destination numeric type.");
-
-		Integer num = 0;
-		while (first != last)
-		{
-			num |= *first;
-			num <<= 1;
-			++first;
-		}
-
-		return num;
-	}*/
 
 	std::string toString(Notation notation) const	{ return toString(notation, 0, b.size());	}
 
