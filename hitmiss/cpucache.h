@@ -4,6 +4,8 @@
 #include "cacheset.h"
 #include "pipt.h"
 #include "lru.h"
+#include "nmru.h"
+#include "plru.h"
 
 #include <iostream>
 #include <vector>
@@ -14,12 +16,16 @@
 template <class CacheAccess, class CacheReplacementPolicy>
 class CPUCache;
 
+/*
+* A Physically Indexed, Physically Tagged (PIPT) cache is one that is accessed using a physical address.
+* CPU cache comprises multiple cache sets (except for a fully associative cache where there is only one cache
+* containing all cache lines). A particular cache set is selected using index bits of the address (there are no
+* index bits in case of a fully associative cache).
+*/
 
 template <class CacheReplacementPolicy>
 class CPUCache<PIPT, CacheReplacementPolicy>
 {
-	//using CacheSetT = CacheSet<PIPT, CacheReplacementPolicy>;
-
 public:
 	template <class PIPTParams, class CacheReplacementParams>
 	CPUCache(PIPTParams&& accessParams, CacheReplacementParams&& replacementParams)
@@ -29,27 +35,20 @@ public:
 	{
 	}
 
-	/// TODO: add a function to invalidate a cache line
 	std::pair<bool, bool> invalidate(const BitArray& address) { return update(address, std::mem_fn(&CacheSet<PIPT, CacheReplacementPolicy>::invalidate)); }
 
-	/// TODO: we need both hit and writeBack
-	//std::pair<bool, bool> read(const BitArray& address) { return update<false>(address); }
 	std::pair<bool, bool> read(const BitArray& address) { return update(address, std::mem_fn(&CacheSet<PIPT, CacheReplacementPolicy>::read)); }
 	
-	//std::pair<bool, bool> write(const BitArray& address) { return update<true>(address); }
 	std::pair<bool, bool> write(const BitArray& address) { return update(address, std::mem_fn(&CacheSet<PIPT, CacheReplacementPolicy>::write)); }
 	
 	void printStatus();
 
 private:
 
-	//template <bool isWrite>
-	//std::pair<bool, bool> update(const BitArray& address);
-	///bool update(const BitArray& address);
+	// Perfectly forward a return type without knowing whether we are dealing with a reference or a value
+	// https://stackoverflow.com/questions/24109737/what-are-some-uses-of-decltypeauto
 	template <class F>
 	decltype(auto) update(const BitArray& address, F op);
-	//auto update(const BitArray& address, F op) -> decltype(op(address));
-	//decltype(F(address)) update(const BitArray& address, F op);
 
 	PIPT pipt;
 	CacheReplacementPolicy replacer;
@@ -59,8 +58,6 @@ private:
 
 template <class ReplacementPolicy>
 template <class F>
-//bool CPUCache<PIPT, ReplacementPolicy>::update(const BitArray& address)
-//auto CPUCache<PIPT, ReplacementPolicy>::update(const BitArray& address, F op) -> decltype(op(address))
 decltype(auto) CPUCache<PIPT, ReplacementPolicy>::update(const BitArray& address, F op)
 {
 	if (address.getLength() != this->pipt.getAddressLength())
@@ -74,33 +71,8 @@ decltype(auto) CPUCache<PIPT, ReplacementPolicy>::update(const BitArray& address
 
 	auto& cacheSet = this->sets[static_cast<decltype(this->sets)::size_type>(index)];
 
-	//bool hit, writeBack;
 	return op(cacheSet, tag);	
 }	// update
-
-//template <class ReplacementPolicy>
-//template <bool isWrite>
-////bool CPUCache<PIPT, ReplacementPolicy>::update(const BitArray& address)
-//std::pair<bool, bool> CPUCache<PIPT, ReplacementPolicy>::update(const BitArray& address)
-//{
-//	if (address.getLength() != this->pipt.getAddressLength())
-//		throw std::invalid_argument("The specified address length does not match the system address length.");
-//
-//	const auto& tag = address.getBits(this->pipt.getOffsetLength() + this->pipt.getIndexLength(), this->pipt.getTagLength());
-//	auto index = address.toNumber<std::size_t>(this->pipt.getOffsetLength(), this->pipt.getIndexLength());
-//
-//	if (index >= sets.size())
-//		throw std::runtime_error("The indexed entry exceeds the number of sets.");
-//
-//	auto& cacheSet = this->sets[static_cast<decltype(this->sets)::size_type>(index)];
-//
-//	//bool hit, writeBack;
-//	if constexpr (isWrite)	// TODO: instead of if-checking, we can pass a pointer to CacheSet::read, CacheSet::write, or CacheSet::invalidate
-//		return cacheSet.write(tag);
-//	else
-//		return cacheSet.read(tag);
-//}	// update
-
 
 
 template <class ReplacementPolicy>
@@ -130,51 +102,49 @@ inline void CPUCache<PIPT, LRU>::printStatus()
 
 		std::cout << std::endl;
 	}	// for i
-}
+}	// printStatus
 
-/*
-template <class CacheAccess, class CacheReplacementPolicy>
-class CPUCache
+
+template <>
+inline void CPUCache<PIPT, PLRU>::printStatus()
 {
-	//using CacheSetT = ;
-
-public:
-	template <class CacheAccessParams, class CacheReplacementParams>
-	CPUCache(CacheAccessParams&& accessParams, CacheReplacementParams&& replacementParams)
-		: accessParams(std::forward<PIPTParams>(accessParams))
-		, replacer(std::forward<CacheReplacementPolicy>(replacementParams))
-		, sets(pipt.getNumSets(), CacheSet(pipt, replacer))
+	for (std::size_t i = 0; i < this->sets.size(); ++i)
 	{
-	}
+		std::cout << "Set " << i << std::endl << std::endl;
 
+		for (std::size_t j = 0; j < this->pipt.getAssociativity(); ++j)
+		{
+			std::cout << "Line " << j << std::endl;
+			std::cout << "Valid: " << this->sets[i][j].isValid()
+				<< "\tDirty: " << this->sets[i][j].isDirty()
+				<< "\tTag: " << (std::string)this->sets[i][j].getTag()
+				<< "\tPLRU: " << (std::string)this->sets[i][j].getReplacementBits()
+				<< std::endl << std::endl;
+		}	// j
 
-	bool read(const BitArray& address);
-	
+		std::cout << std::endl;
+	}	// for i
+}	// printStatus
 
-private:
-	CacheAccess accessParams;
-	CacheReplacementPolicy replacer;
-	std::vector<CacheSet<CacheAccess, CacheReplacementPolicy>> sets;
-};	// CPUCache
-
-template <class CacheReplacementPolicy>
-bool CPUCache<PIPT, CacheReplacementPolicy>::read(const BitArray& address)
+template <>
+inline void CPUCache<PIPT, NMRU>::printStatus()
 {
-	//auto indexPart = address.extract(this->pipt.getOffsetLength(), this->pipt.getIndexLength());
-		//auto tagPart = address.extract(this->pipt.getOffsetLength() + this->pipt.getIndexLength(), -1);
+	for (std::size_t i = 0; i < this->sets.size(); ++i)
+	{
+		std::cout << "Set " << i << std::endl << "NMRU: " << (std::string)this->sets[i].getReplacementBits() << std::endl << std::endl;
 
-		//auto index = indexPart.toNumber();	// TODO: check warnings on x86 and x64
+		for (std::size_t j = 0; j < this->pipt.getAssociativity(); ++j)
+		{
+			std::cout << "Line " << j << std::endl;
+			std::cout << "Valid: " << this->sets[i][j].isValid()
+				<< "\tDirty: " << this->sets[i][j].isDirty()
+				<< "\tTag: " << (std::string)this->sets[i][j].getTag()
+				<< std::endl << std::endl;
+		}	// j
 
-	const auto& tag = address.getBits(this->pipt.getOffsetLength() + this->pipt.getIndexLength(), this->pipt.getTagLength());
-	auto index = address.toNumber<std::size_t>(this->pipt.getOffsetLength(), this->pipt.getIndexLength());
+		std::cout << std::endl;
+	}	// for i
+}	// printStatus
 
-	if (index >= sets.size())
-		throw std::runtime_error("The indexed entry exceeds the number of sets.");
-
-	auto& cacheSet = this->sets[static_cast<decltype(this->sets)::size_type>(index)];
-
-	bool hit, writeBack;
-	return cacheSet.read(tag, hit, writeBack);
-}*/
 
 #endif	// CPUCACHE_H
