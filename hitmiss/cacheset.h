@@ -3,6 +3,9 @@
 
 #include "cacheline.h"
 
+/*
+* A cache set consists of one or more cache lines. The number of cache lines is defined by cache associativity.
+*/
 
 template <class CacheAccessParams, class CacheReplacementPolicy>
 class CacheSet
@@ -25,13 +28,10 @@ public:
 	CacheLine<CacheAccessParams, CacheReplacementPolicy>& operator [] (std::size_t index) { return this->lines[index]; }
 
 
-	//const CacheReplacementPolicy& getReplacementPolicy() const { return this->replacementPolicy; }
-
 	BitArray getReplacementBits() const { return this->replacementBits; }
 
 	void setReplacementBits(const BitArray& replacementBits)
 	{
-		//if (replacementBits.getLength() != this->replacementPolicy.getReplacementBitLengthPerSet(this->accessParams))
 		if (replacementBits.getLength() != this->replacementBits.getLength())
 			throw std::runtime_error("Attempting to set the replacement bits of invalid length.");
 
@@ -50,11 +50,8 @@ public:
 private:
 
 	template <bool isWrite>
-	//bool update(const BitArray& tag, bool* hit, bool* writeBack)
 	std::pair<bool, bool> update(const BitArray& tag)
 	{
-		//*hit = false;
-		//*writeBack = false;
 		bool hit = false;
 		bool writeBack = false;
 
@@ -63,7 +60,6 @@ private:
 		{
 			if (it->isValid())
 			{
-				//if (it->getTag() == tag)
 				if (it->compareTag(tag))
 				{
 					hit = true;
@@ -77,8 +73,6 @@ private:
 
 		if (lineIt == lines.end())		// no free line
 		{
-			//lineIt = this->replacementPolicy.evict(lines.begin(), lines.end());
-			//lineIt = this->replacementPolicy.evict(*this);
 			std::size_t evictedIdx = this->replacementPolicy.evict(*this);
 			lineIt = lines.begin() + evictedIdx;
 			writeBack = lineIt->isDirty();
@@ -87,7 +81,6 @@ private:
 		}
 		else	// free line
 		{
-			//this->replacementPolicy.update(lineIt, lines.begin(), lines.end());
 			this->replacementPolicy.update(*this, lineIt - lines.begin());
 			lineIt->setValid(true);
 			lineIt->setDirty(isWrite || hit && lineIt->isDirty());		// in case of a hit we have to check whether it was dirty
@@ -110,15 +103,10 @@ std::pair<bool, bool> CacheSet<CacheAccessParams, CacheReplacementPolicy>::inval
 	{
 		if (it->isValid())
 		{
-			//if (it->getTag() == tag)
 			if (it->compareTag(tag))
 			{
-				//hit = true;
-				//writeBack = false;
-				//lineIt = it;
 				bool writeBack = it->isDirty();
 				it->setValid(false);
-				//it->setDirty();
 				return std::make_pair(true, writeBack);
 			}	// tags match
 		}	// valid

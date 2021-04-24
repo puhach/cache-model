@@ -13,7 +13,6 @@ public:
 	template <class CacheAccessParams>
 	std::size_t getReplacementBitLengthPerLine(const CacheAccessParams& accessParams) const
 	{
-		//return static_cast<std::size_t>(std::ceil(std::log2(accessParams.getAssociativity())));
 		return 1;
 	}
 
@@ -46,7 +45,6 @@ public:
 
 			auto bits = cacheLine.getReplacementBits();
 			assert(bits.getLength() == 1);
-			//auto rank = bits.toNumber<decltype(n)>();
 			bool b = bits[0];
 
 			if (!b)
@@ -54,7 +52,6 @@ public:
 				if (evicted == n)	// nothing evicted so far
 				{
 					evicted = i;
-					//bits.setNumber(n - 1);
 					bits[0] = true;
 					cacheLine.setReplacementBits(bits);
 				}	// evicted == n

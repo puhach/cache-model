@@ -30,13 +30,14 @@ public:
 		auto n = cacheSet.getSize();
 		std::size_t evicted = n;
 
-		//for (; first != last; ++first)
 		for (std::size_t i = 0; i < cacheSet.getSize(); ++i)
 		{
 			auto& cacheLine = cacheSet[i];
 
-			if (!cacheLine.isValid())
-				continue;
+			// Why would we evict something if there are free lines?
+			assert(cacheLine.isValid());
+			//if (!cacheLine.isValid())
+			//	continue;
 
 			auto bits = cacheLine.getReplacementBits();
 			auto rank = bits.toNumber<decltype(n)>();
@@ -60,75 +61,6 @@ public:
 		return evicted;
 	}	// evict
 
-	//template <typename Iterator>
-	//Iterator evict(Iterator first, Iterator last) const
-	//{
-	//	assert(first < last);
-	//	auto n = last - first;
-	//	
-	//	Iterator evicted;
-	//	for (;first != last; ++first)
-	//	{
-	//		if (!first->isValid())
-	//			continue;
-
-	//		auto bits = first->getReplacementBits();
-	//		auto rank = bits.toNumber<decltype(n)>();
-
-	//		if (rank == 0)
-	//		{
-	//			evicted = first;
-	//			bits.setNumber(n-1);
-	//		}
-	//		else
-	//		{
-	//			--rank;
-	//			assert(rank >= 0);
-	//			bits.setNumber(rank);
-	//			//bits.decrement();
-	//		}
-	//		
-	//		first->setReplacementBits(bits);
-	//	}	// for
-	//			
-	//	assert(evicted != last);
-	//	return evicted;
-	//}
-
-	//template <typename Iterator>
-	//void update(Iterator updatedIt, Iterator first, Iterator last) const
-	//{
-	//	assert(first < last);
-
-	//	auto n = last - first;
-
-	//	auto ubits = updatedIt->getReplacementBits();
-	//	auto urank = ubits.toNumber<decltype(n)>();
-	//	//if (rank == n-1)
-	//	for (; first != last; ++first)
-	//	{
-	//		// It looks like we have to update LRU counters even for invalid entries:
-	//		// https://classroom.udacity.com/courses/ud007/lessons/632538649/concepts/9391386340923
-	//		//if (!first->isValid() || first == updatedIt)
-	//		if (first == updatedIt)
-	//			continue;
-
-	//		auto bits = first->getReplacementBits();
-	//		auto rank = bits.toNumber<decltype(n)>();
-	//		if (rank > urank)
-	//		//if (bits > ubits)
-	//		{
-	//			--rank;
-	//			assert(rank >= 0);
-	//			bits.setNumber(rank);
-	//			//bits.decrement();
-	//			first->setReplacementBits(bits);
-	//		}
-	//	}	// while
-
-	//	ubits.setNumber(n-1);
-	//	updatedIt->setReplacementBits(ubits);			
-	//}	// update
 
 	template <class CacheAccessParams>
 	void update(CacheSet<CacheAccessParams, LRU> &cacheSet, std::size_t updatedIndex) const
@@ -136,14 +68,11 @@ public:
 		auto n = cacheSet.getSize();
 		auto ubits = cacheSet[updatedIndex].getReplacementBits();
 		auto urank = ubits.toNumber<decltype(n)>();
-		//if (rank == n-1)
-		//for (; first != last; ++first)
+
 		for (std::size_t i = 0; i < cacheSet.getSize(); ++i)
 		{
 			// It looks like we have to update LRU counters even for invalid entries:
 			// https://classroom.udacity.com/courses/ud007/lessons/632538649/concepts/9391386340923
-			//if (!first->isValid() || first == updatedIt)
-			//if (first == updatedIt)
 			if (i == updatedIndex)
 				continue;
 
@@ -154,7 +83,6 @@ public:
 				--rank;
 				assert(rank >= 0);
 				bits.setNumber(rank);
-				//bits.decrement();
 				cacheSet[i].setReplacementBits(bits);
 			}
 		}	// while
