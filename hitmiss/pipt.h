@@ -35,7 +35,9 @@ public:
 
 	PIPT(PIPT&& other) = default;
 
-	// TODO: define the copy/move assignment operators
+	PIPT& operator = (const PIPT& other) = default;
+
+	PIPT& operator = (PIPT&& other) = default;
 
 	std::size_t getAddressLength() const { return this->addressLength; }
 
