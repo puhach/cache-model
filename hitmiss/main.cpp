@@ -209,6 +209,79 @@ int main(int argc, char* argv[])
 		cpuCache.printStatus();
 		std::cout << "Hit: " << yn[hit] << std::endl << "Write-back: " << yn[writeBack] << std::endl << std::endl;
 
+
+		std::tie(hit, writeBack) = cpuCache.read(BitArray("F10", BitArray::Notation::Hexadecimal));
+		std::tie(hit, writeBack) = cpuCache.write(BitArray("AA0", BitArray::Notation::Hexadecimal));		
+		std::tie(hit, writeBack) = cpuCache.write(BitArray("F10", BitArray::Notation::Hexadecimal));
+		std::tie(hit, writeBack) = cpuCache.read(BitArray("F00", BitArray::Notation::Hexadecimal));
+		std::tie(hit, writeBack) = cpuCache.write(BitArray("F11", BitArray::Notation::Hexadecimal));
+
+		/*
+		Expected out:
+
+			Set 0:
+			Tag=F0 V=1 D=0 LRU=0
+			Tag=F1 V=1 D=1 LRU=1
+
+			Set 1:
+			Tag=F2 V=1 D=0 LRU=0
+			Tag=F3 V=1 D=1 LRU=1
+
+		Hit: Yes
+		Write-back: No
+		*/
+		cpuCache.printStatus();
+		std::cout << "Hit: " << yn[hit] << std::endl << "Write-back: " << yn[writeBack] << std::endl << std::endl;
+
+
+		std::tie(hit, writeBack) = cpuCache.read(BitArray("F00", BitArray::Notation::Hexadecimal));
+		std::tie(hit, writeBack) = cpuCache.write(BitArray("F2A", BitArray::Notation::Hexadecimal));
+		std::tie(hit, writeBack) = cpuCache.write(BitArray("AAA", BitArray::Notation::Hexadecimal));
+		std::tie(hit, writeBack) = cpuCache.read(BitArray("F2A", BitArray::Notation::Hexadecimal));
+		std::tie(hit, writeBack) = cpuCache.read(BitArray("F3A", BitArray::Notation::Hexadecimal));
+		std::tie(hit, writeBack) = cpuCache.write(BitArray("F22", BitArray::Notation::Hexadecimal));
+
+		/*
+		Expected out:
+
+			Set 0:
+			Tag=F0 V=1 D=0 LRU=0
+			Tag=F2 V=1 D=1 LRU=1
+
+			Set 1:
+			Tag=F2 V=1 D=1 LRU=0
+			Tag=F3 V=1 D=0 LRU=1
+
+		Hit: No 
+		Write-back: Yes
+		*/
+		cpuCache.printStatus();
+		std::cout << "Hit: " << yn[hit] << std::endl << "Write-back: " << yn[writeBack] << std::endl << std::endl;
+
+
+		std::tie(hit, writeBack) = cpuCache.read(BitArray("F00", BitArray::Notation::Hexadecimal));
+		std::tie(hit, writeBack) = cpuCache.write(BitArray("F10", BitArray::Notation::Hexadecimal));
+		std::tie(hit, writeBack) = cpuCache.read(BitArray("F00", BitArray::Notation::Hexadecimal));
+		std::tie(hit, writeBack) = cpuCache.read(BitArray("F2A", BitArray::Notation::Hexadecimal));
+		std::tie(hit, writeBack) = cpuCache.write(BitArray("F3F", BitArray::Notation::Hexadecimal));
+
+		/*
+		Expected out:
+
+			Set 0:
+			Tag=F0 V=1 D=0 LRU=1
+			Tag=F1 V=1 D=1 LRU=0
+
+			Set 1:
+			Tag=F2 V=1 D=1 LRU=0
+			Tag=F3 V=1 D=1 LRU=1
+
+		Hit: Yes
+		Write-back: No
+		*/
+		cpuCache.printStatus();
+		std::cout << "Hit: " << yn[hit] << std::endl << "Write-back: " << yn[writeBack] << std::endl << std::endl;
+		
 		return 0;
 	}	// try
 	catch (const std::exception& e)
